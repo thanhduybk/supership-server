@@ -15,15 +15,33 @@ class AuthController extends BaseController
 {
     public function login(Request $request)
     {
+        Log::alert($request);
+        Log::alert("Hello");
+        $isEmail = $this->isEmail($request->get('emailOrPhone'));
+
         $request->validate([
-            'email' => 'required|email|string',
+            'emailOrPhone' => !$isEmail ? 'required|digits_between:9,11' : 'required|email',
             'password' => 'required|string',
             'remember' => 'boolean'
         ]);
 
-        $credentials = request(['email', 'password']);
+        $principal = $request->get('emailOrPhone');
+        $password = $request->get('password');
 
-        if (Auth::attempt($credentials)) {
+        if (filter_var($principal, FILTER_VALIDATE_EMAIL)) {
+            Auth::attempt([
+                'email' => $principal,
+                'password' => $password
+            ]);
+        } else {
+            Auth::attempt([
+                'phone' => $principal,
+                'password' => $password
+            ]);
+        }
+
+        if (Auth::check()) {
+            Log::alert("Hi");
             $user = $request->user();
 
             $oauthToken = $user->createToken('Supership');
@@ -32,28 +50,31 @@ class AuthController extends BaseController
             $token = $oauthToken->token;
 
             if ($request->remember) {
-                $token->expires_at = Carbon::now()->addWeek();
+                $token->expires_at = Carbon::now()->addWeeks(2);
+            } else {
+                $token->expires_at = Carbon::now()->addWeeks(1);
             }
 
             $token->save();
 
             $success['token'] = $accessToken;
-            $success['tokenType'] = 'Bearer';
             $success['name'] = $user->name;
 
             return $this->sendResponse('Login successfully', $success, 200);
         } else {
-            $this->sendError('Invalid email or password', ['error' => 'Unauthorized'], 401);
+            return $this->sendError(addslashes('Invalid email/phone or password'), ['error' => 'Unauthorized'], 401);
         }
     }
 
     public function register(Request $request)
     {
+        Log::alert($request);
         $validator = Validator::make($request->all(), [
-            'name' => 'required',
+            'shop' => 'required|string',
+            'name' => 'required|string',
+            'phone' => 'required|digits_between:9,11',
             'email' => 'required|email',
-            'password' => 'required',
-            'confirmPassword' => 'required|same:password'
+            'password' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -67,7 +88,7 @@ class AuthController extends BaseController
             $success['token'] = $user->createToken('Supership')->accessToken;
             $success['name'] = $user->name;
 
-            return $this->sendResponse('Registered successfully', $success, 201);
+            return $this->sendResponse('Registered successfully', null, 201);
         }
     }
 
@@ -80,5 +101,9 @@ class AuthController extends BaseController
     public function me(Request $request) {
         Log::info($request->user());
         return $this->sendResponse('Get user info successfully', $request->user(), 200);
+    }
+
+    private function isEmail(string $str): bool {
+        return filter_var($str, FILTER_VALIDATE_EMAIL);
     }
 }
