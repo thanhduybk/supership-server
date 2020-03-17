@@ -22,10 +22,25 @@ Route::group([
 
     Route::group([
         'middleware' => 'auth:api'
-    ], function() {
+    ], function () {
         Route::get('logout', 'AuthController@logout');
         Route::get('me', 'AuthController@me');
     });
 });
 
+Route::apiResource('repositories', 'RepositoryController')
+    ->middleware('auth:api');
 
+Route::apiResource('orders', 'OrderController')
+    ->middleware('auth:api');
+
+Route::get('provinces', 'AddressController@allProvinces');
+Route::get('districts', 'AddressController@allDistricts');
+Route::get('wards', 'AddressController@allWards');
+
+Route::fallback(function () {
+    return response()->json([
+        'success' => false,
+        'message' => sprintf("No handler found for the request %s-%s", request()->getMethod(), request()->getPathInfo()),
+    ], 404);
+});

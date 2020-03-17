@@ -15,8 +15,6 @@ class AuthController extends BaseController
 {
     public function login(Request $request)
     {
-        Log::alert($request);
-        Log::alert("Hello");
         $isEmail = $this->isEmail($request->get('emailOrPhone'));
 
         $request->validate([
@@ -41,7 +39,6 @@ class AuthController extends BaseController
         }
 
         if (Auth::check()) {
-            Log::alert("Hi");
             $user = $request->user();
 
             $oauthToken = $user->createToken('Supership');
