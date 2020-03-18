@@ -29,6 +29,7 @@ class CreateOrdersTable extends Migration
             $table->bigInteger('ward_id');
             $table->bigInteger('sender_id')->nullable()->default(0);
             $table->bigInteger('money_taking');
+            $table->timestamps();
 
             $table->index(["repository_id"], 'orders_repositories_id_fk');
 

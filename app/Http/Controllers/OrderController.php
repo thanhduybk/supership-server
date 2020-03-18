@@ -20,12 +20,15 @@ class OrderController extends BaseController
      */
     public function index()
     {
-        $orders = Order::where('sender_id', Auth::id())->get();
-        return $this->sendResponse(
-            'Get all orders succesfully',
-            $orders,
-            200
-        );
+        $orders = Order::where('sender_id', Auth::id())->orderBy('created_at', 'desc')->get();
+
+        $response = array();
+
+        foreach ($orders as $order) {
+            array_push($response, $this->makeReadable($order));
+        }
+
+        return $this->sendResponse('Get all orders succesfully', $response, 200);
     }
 
     /**
@@ -50,7 +53,8 @@ class OrderController extends BaseController
         if ($validator->fails()) {
             return $this->sendError('Bad request', $validator->errors(), 400);
         } else {
-            $ward = Ward::find($request->get('ward_id'));
+            // Check if the specified ward is existing
+            Ward::find($request->get('ward_id'));
 
             $newOrder = Order::create([
                 'product' => $request->get('product'),
@@ -59,14 +63,10 @@ class OrderController extends BaseController
                 'repository_id' => $request->get('repository_id'),
                 'ward_id' => $request->get('ward_id'),
                 'sender_id' => Auth::id(),
-                'money_taking' => $request->has('money_taking') ? $request->get('money_taking') : 0
+                'money_taking' => $request->has('money_taking') ? (int)$request->get('money_taking') : 0
             ]);
 
-            return $this->sendResponse(
-                'Create order successfully',
-                $newOrder,
-                201
-            );
+            return $this->sendResponse('Create order successfully', $this->makeReadable($newOrder), 201);
         }
     }
 
@@ -78,11 +78,7 @@ class OrderController extends BaseController
      */
     public function show(Order $order)
     {
-        return $this->sendResponse(
-            'Get order successfully',
-            $order,
-            200
-        );
+        return $this->sendResponse('Get order successfully', $this->makeReadable($order), 200);
     }
 
     /**
@@ -112,7 +108,7 @@ class OrderController extends BaseController
             $order->update($request->all());
             return $this->sendResponse(
                 'Update order successfully',
-                Order::find($request->get('id')),
+                $this->makeReadable(Order::where('id', $order->id)->first()),
                 200
             );
         }
@@ -130,10 +126,29 @@ class OrderController extends BaseController
         Log::alert($order);
 
         if (!empty($order)) {
+            $id = $order->id;
             $order->delete();
-            return $this->sendResponse('Delete order successfully', null, 200);
+            return $this->sendResponse('Delete order successfully', $id, 200);
         } else {
             return $this->sendError('Order not found', null, 404);
         }
+    }
+
+    private function fullAddress($order) {
+        $ward = $order->ward;
+        $district = $ward->district;
+        $province = $district->province;
+
+        return sprintf("%s, %s, %s, %s", $order->address, $ward->name, $district->name, $province->name);
+    }
+
+    private function makeReadable($order) {
+        return [
+            'id' => $order->id,
+            'product' => $order->product,
+            'receiver' => $order->receiver,
+            'address' => $this->fullAddress($order),
+            'repository' => $order->repository->name,
+        ];
     }
 }

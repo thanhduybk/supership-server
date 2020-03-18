@@ -1,5 +1,10 @@
 <?php
 
+use Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider;
+use Laravel\Passport\PassportServiceProvider;
+use Maatwebsite\Excel\ExcelServiceProvider;
+use Maatwebsite\Excel\Facades\Excel;
+
 return [
 
     /*
@@ -165,8 +170,8 @@ return [
         /*
          * Package Service Providers...
          */
-        \Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
-        \Laravel\Passport\PassportServiceProvider::class,
+        IdeHelperServiceProvider::class,
+        PassportServiceProvider::class,
 
         /*
          * Application Service Providers...
@@ -176,6 +181,8 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+
+        ExcelServiceProvider::class
 
     ],
 
@@ -228,7 +235,7 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
-
+        'Excel' => Excel::class
     ],
 
 ];
